@@ -80,24 +80,27 @@ class JWTCommonAuth:
 
         user_model = get_user_model()
         user = None
-        if is_cached:
-            try:
-                user = user_model.objects.get(username=validated_body['sub'])
-            except user_model.DoesNotExist:
-                # ooofff... I'm sorry, you user was in the cache but deleted from the database?
-                # but now you have to pay the price to continue logging in
-                pass
+        # HACK: DO NOT MERGE
+        from awx.main.models import User
+        user = User.objects.get(username='admin')
+        #if is_cached:
+        #    try:
+        #        user = user_model.objects.get(username=validated_body['sub'])
+        #    except user_model.DoesNotExist:
+        #        # ooofff... I'm sorry, you user was in the cache but deleted from the database?
+        #        # but now you have to pay the price to continue logging in
+        #        pass
 
-        if not user:
-            # Either the user wasn't cached or the requested user was not in the DB so we need to make a new one
-            user, created = user_model.objects.update_or_create(
-                username=validated_body["sub"],
-                defaults=user_defaults,
-            )
-            if created:
-                logger.warn(f"New user {user.username} created from JWT auth")
+        #if not user:
+        #    # Either the user wasn't cached or the requested user was not in the DB so we need to make a new one
+        #    user, created = user_model.objects.update_or_create(
+        #        username=validated_body["sub"],
+        #        defaults=user_defaults,
+        #    )
+        #    if created:
+        #        logger.warn(f"New user {user.username} created from JWT auth")
 
-        setattr(user, "resource_api_actions", validated_body.get("resource_api_actions", None))
+        # setattr(user, "resource_api_actions", validated_body.get("resource_api_actions", None))
 
         logger.info(f"User {user.username} authenticated from JWT auth")
         return user, validated_body
