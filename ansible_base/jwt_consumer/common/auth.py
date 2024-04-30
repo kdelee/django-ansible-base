@@ -118,6 +118,7 @@ class JWTCommonAuth:
         # If the user was in the cache and the values of the cache match the expected values we had it in cache
         if cached_user is not None and cached_user == expected_cache_value:
             return True, expected_cache_value
+        cache.set(validated_body["sub"], expected_cache_value)
         return False, expected_cache_value
 
     def get_key_from_cache(self, ignore_cache: bool = False) -> Optional[str]:
