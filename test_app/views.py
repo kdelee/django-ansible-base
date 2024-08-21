@@ -1,3 +1,4 @@
+import time
 import logging
 from itertools import chain
 
@@ -160,7 +161,7 @@ def api_root(request, format=None):
         # want '^users/$' [name='user-list']
         # do not want '^users/(?P<pk>[^/.]+)/organizations/$' [name='user-organizations-list'],
         if '-list' in url.name and url.pattern._regex.count('/') == 1:
-            list_endpoints[url.name.removesuffix('-list')] = get_relative_url(url.name, request=request, format=format)
+            list_endpoints[url.name.removesuffix('-list')] = get_relative_url(url.name)
 
     from ansible_base.api_documentation.urls import api_version_urls as docs_urls
     from ansible_base.authentication.urls import api_version_urls as authentication_urls
@@ -168,14 +169,20 @@ def api_root(request, format=None):
     for url in docs_urls + authentication_urls[1:]:
         if isinstance(url, URLPattern):
             try:
-                list_endpoints[url.name] = get_relative_url(url.name, request=request, format=format)
+                list_endpoints[url.name] = get_relative_url(url.name)
             except NoReverseMatch:
                 pass
 
-    list_endpoints['service-index'] = get_relative_url('service-index-root', request=request, format=format)
-    list_endpoints['role-metadata'] = get_relative_url('role-metadata', request=request, format=format)
+    list_endpoints['service-index'] = get_relative_url('service-index-root')
+    list_endpoints['role-metadata'] = get_relative_url('role-metadata')
+    list_endpoints['timeout-view'] = get_relative_url('test-timeout-view')
 
     return Response(list_endpoints)
+
+
+@api_view(['GET'])
+def timeout_view(request, format=None):
+    time.sleep(60*10)  # 10 minutes
 
 
 class MultipleFieldsViewSet(TestAppViewSet):
