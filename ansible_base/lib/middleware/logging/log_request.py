@@ -5,7 +5,6 @@ import uuid
 
 from ansible_base.lib.logging import thread_local
 
-import signal
 
 
 logger = logging.getLogger(__name__)
