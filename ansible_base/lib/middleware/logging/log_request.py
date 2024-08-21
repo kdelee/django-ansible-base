@@ -1,4 +1,5 @@
 import logging
+import signal
 import traceback
 import uuid
 
@@ -17,6 +18,8 @@ class LogTracebackMiddleware:
 
     def __init__(self, get_response):
         self.get_response = get_response
+        signal.signal(signal.SIGSYS, LogTracebackMiddleware.handle_signal)
+        signal.signal(signal.SIGABRT, LogTracebackMiddleware.handle_signal)
 
     def __call__(self, request):
         t_id = str(uuid.uuid4())
