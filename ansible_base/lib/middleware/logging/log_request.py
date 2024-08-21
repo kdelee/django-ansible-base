@@ -1,8 +1,30 @@
 import logging
+import traceback
+import uuid
 
 from ansible_base.lib.logging import thread_local
 
 logger = logging.getLogger(__name__)
+
+
+class LogTracebackMiddleware:
+    transactions = {}
+
+    @classmethod
+    def handle_signal(cls, *args):
+        for t_id, request in LogTracebackMiddleware.transactions.items():
+            logger.error(f"Received graceful timeout signal for {request.method} path: {request.path} while in stack: {''.join(traceback.format_stack())}")
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        t_id = str(uuid.uuid4())
+        LogTracebackMiddleware.transactions[t_id] = request
+        try:
+            return self.get_response(request)
+        finally:
+            LogTracebackMiddleware.transactions.pop(t_id)
 
 
 class LogRequestMiddleware:
