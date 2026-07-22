@@ -108,7 +108,6 @@ def needed_updates_on_assignment(role_definition, actor, object_role, created=Fa
     return (recompute_team_ids, to_update)
 
 
-def update_after_assignment(recompute_team_ids, to_update):
 class _DeferRBACComputations(threading.local):
     def __init__(self):
         self.active = False
