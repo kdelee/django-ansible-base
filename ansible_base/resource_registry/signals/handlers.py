@@ -2,6 +2,7 @@ import threading
 from contextlib import contextmanager
 from functools import lru_cache
 
+from typing import Generator
 from ansible_base.resource_registry.models import Resource, init_resource_from_object
 from ansible_base.resource_registry.registry import get_registry
 from ansible_base.resource_registry.utils.sync_to_resource_server import sync_to_resource_server
@@ -71,6 +72,39 @@ def decide_to_sync_update(sender, instance, raw, using, update_fields, **kwargs)
 
     if not changed_fields.intersection(fields_that_sync):
         instance._skip_reverse_resource_sync = True
+
+
+class _DeferResourceCleanup(threading.local):
+    def __init__(self):
+        self.active = False
+        self.pending = []
+
+
+_defer_resource_cleanup = _DeferResourceCleanup()
+
+
+@contextmanager
+def defer_resource_cleanup() -> Generator[None, None, None]:
+    _defer_resource_cleanup.active = True
+    _defer_resource_cleanup.pending = []
+    try:
+        yield
+    except BaseException:
+        _defer_resource_cleanup.active = False
+        _defer_resource_cleanup.pending = []
+        raise
+    else:
+        pending = _defer_resource_cleanup.pending
+        _defer_resource_cleanup.active = False
+        _defer_resource_cleanup.pending = []
+        if pending:
+            from collections import defaultdict
+
+            by_ct = defaultdict(set)
+            for ct_id, obj_id in pending:
+                by_ct[ct_id].add(obj_id)
+            for ct_id, obj_ids in by_ct.items():
+                Resource.objects.filter(content_type_id=ct_id, object_id__in=obj_ids).delete()
 
 
 class ReverseSyncEnabled(threading.local):
