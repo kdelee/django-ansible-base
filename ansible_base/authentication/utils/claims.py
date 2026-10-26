@@ -785,7 +785,7 @@ class ReconcileUser:
         """
         # NOTE(cutwater): Here `prefetch_related` is used to prevent N+1 problem when accessing `content_object`
         #  attribute in `RoleUserAssignmentsCache.cache_existing` method.
-        role_assignments = self.user.role_assignments.prefetch_related('content_object').all()
+        role_assignments = self.user.role_assignments.select_related('content_type', 'role_definition').prefetch_related('content_object').all()
         self.permissions_cache.cache_existing(role_assignments)
 
         # System roles
