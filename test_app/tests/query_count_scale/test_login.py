@@ -11,13 +11,17 @@ from ansible_base.rbac.models import RoleUserAssignment
 
 def test_claims_assignment_query_count_is_flat(_seed_large_dataset, _unblocked_db):
     """Claims reconciliation must not become an N+1 as RUAs grow."""
-    assignment_queryset = RoleUserAssignment.objects.all()
     counts = []
 
     for limit in (10, 100):
+        # Keep the queryset unsliced so manage_permissions() can apply its
+        # content-type filter before evaluating the limited assignment set.
+        assignment_ids = list(RoleUserAssignment.objects.order_by('pk').values_list('pk', flat=True)[:limit])
+        assignment_queryset = RoleUserAssignment.objects.filter(pk__in=assignment_ids)
+
         reconcile_user = ReconcileUser.__new__(ReconcileUser)
         reconcile_user.claims = {'rbac_roles': {}}
-        reconcile_user.user = mock.Mock(role_assignments=assignment_queryset[:limit])
+        reconcile_user.user = mock.Mock(role_assignments=assignment_queryset)
         reconcile_user.permissions_cache = RoleUserAssignmentsCache()
         reconcile_user._compute_organization_permissions = mock.Mock(return_value=[])
         reconcile_user._get_org_teams = mock.Mock(return_value={})
